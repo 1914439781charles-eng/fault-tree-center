@@ -1,33 +1,423 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <title>故障树集合</title>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>故障树集合导航</title>
     <style>
-        body { font-family: Arial; padding: 40px; max-width: 800px; margin: auto; }
-        a { display: block; padding: 12px; margin: 6px 0; background: #f0f0f0; border-radius: 6px; text-decoration: none; color: #333; }
-        a:hover { background: #e0e0e0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f7fa;
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* 头部区域 */
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            gap: 15px;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #1a2332;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stats {
+            font-size: 14px;
+            color: #6b7a8f;
+            background: #e9ecf0;
+            padding: 4px 14px;
+            border-radius: 20px;
+        }
+
+        /* 搜索框 */
+        .search-box {
+            width: 100%;
+            max-width: 340px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 16px 10px 40px;
+            border: 2px solid #dce1e8;
+            border-radius: 30px;
+            font-size: 15px;
+            background: white;
+            transition: all 0.25s ease;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: #4a90d9;
+            box-shadow: 0 0 0 4px rgba(74, 144, 217, 0.15);
+        }
+
+        .search-box::before {
+            content: "🔍";
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+            opacity: 0.6;
+        }
+
+        /* 分类筛选标签 */
+        .filter-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+            padding-bottom: 18px;
+            border-bottom: 2px solid #e9ecf0;
+        }
+
+        .filter-tab {
+            padding: 6px 18px;
+            border-radius: 30px;
+            border: 1.5px solid #dce1e8;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            color: #3d4a5c;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .filter-tab:hover {
+            background: #f0f4f9;
+        }
+
+        .filter-tab.active {
+            background: #1a2332;
+            color: white;
+            border-color: #1a2332;
+        }
+
+        .filter-tab .badge {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 30px;
+            padding: 0 8px;
+            font-size: 12px;
+            margin-left: 4px;
+        }
+
+        .filter-tab.active .badge {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* 故障树卡片网格 */
+        .tree-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .tree-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid #eef1f5;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tree-card:hover {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
+            transform: translateY(-2px);
+            border-color: #c8d2df;
+        }
+
+        .tree-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .tree-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a2332;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tree-name .category-tag {
+            font-size: 11px;
+            font-weight: 500;
+            background: #eef3f9;
+            color: #2c5f8a;
+            padding: 2px 10px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        .tree-desc {
+            font-size: 13px;
+            color: #6b7a8f;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tree-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f4f9;
+            color: #1a2332;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            text-decoration: none;
+            font-size: 18px;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            margin-left: 10px;
+        }
+
+        .tree-link:hover {
+            background: #1a2332;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        /* 无结果提示 */
+        .no-result {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 50px 20px;
+            color: #8a9aa8;
+            font-size: 16px;
+        }
+
+        .no-result span {
+            font-size: 40px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 640px) {
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                max-width: 100%;
+            }
+
+            .tree-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>📊 故障树列表</h1>
-    <div id="treeList"></div>
+
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>
+                📊 故障树列表
+                <span class="stats" id="totalCount">0 个</span>
+            </h1>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜索名称、描述或分类..." autocomplete="off">
+            </div>
+        </div>
+
+        <!-- 分类标签 -->
+        <div class="filter-tabs" id="filterTabs">
+            <!-- 由 JS 动态生成 -->
+        </div>
+
+        <!-- 卡片网格 -->
+        <div class="tree-grid" id="treeGrid">
+            <!-- 由 JS 动态渲染 -->
+        </div>
+    </div>
 
     <script>
-        // 手动维护列表，新增时在这里添加即可
-        const trees = [
-            { name: '故障树 001 - 电源故障', path: 'trees/tree-001/' },
-            { name: '故障树 002 - 网络故障', path: 'trees/tree-002/' },
-            // 新增时在这里加一行
-        ];
+        // ============================================================
+        //  ★★★ 在这里维护你的故障树数据 ★★★
+        //  新增故障树时，只需在这个数组里添加一个对象即可。
+        //  支持按 "分类" 筛选，也支持搜索 "名称"、"描述"、"分类"。
+        // ============================================================
+        const treeData = [{
+            id: 'tree-001',
+            name: 'How to ensure the stability of D2D communication',
+            category: '硬件故障',
+            description: '服务器无法开机或异常断电排查流程',
+            path: 'trees/How to ensure the stability of D2D communication/'
+        }, {
+            id: 'tree-002',
+            name: '网络连接异常',
+            category: '网络故障',
+            description: '内外网访问超时、丢包、延迟过高的排查树',
+            path: 'trees/tree-002/'
+        }, {
+            id: 'tree-003',
+            name: '数据库连接池耗尽',
+            category: '应用故障',
+            description: '应用程序无法获取数据库连接的分析与处理',
+            path: 'trees/tree-003/'
+        }, {
+            id: 'tree-004',
+            name: 'CPU 负载持续过高',
+            category: '性能故障',
+            description: '系统平均负载异常，影响服务响应速度',
+            path: 'trees/tree-004/'
+        }, {
+            id: 'tree-005',
+            name: '磁盘空间不足告警',
+            category: '硬件故障',
+            description: '日志或数据分区使用率超过阈值处理方案',
+            path: 'trees/tree-005/'
+        }];
+        // ============================================================
 
-        const container = document.getElementById('treeList');
-        trees.forEach(t => {
-            const a = document.createElement('a');
-            a.href = t.path;
-            a.textContent = t.name + ' →';
-            container.appendChild(a);
+        // ----- 以下为渲染逻辑，无需修改 -----
+
+        const grid = document.getElementById('treeGrid');
+        const searchInput = document.getElementById('searchInput');
+        const filterTabs = document.getElementById('filterTabs');
+        const totalSpan = document.getElementById('totalCount');
+
+        let activeCategory = '全部';
+
+        // 提取所有分类
+        function getCategories() {
+            const cats = new Set(treeData.map(t => t.category).filter(Boolean));
+            return ['全部', ...Array.from(cats).sort()];
+        }
+
+        // 渲染分类标签
+        function renderTabs() {
+            const categories = getCategories();
+            const counts = {};
+            treeData.forEach(t => {
+                const cat = t.category || '未分类';
+                counts[cat] = (counts[cat] || 0) + 1;
+            });
+
+            filterTabs.innerHTML = categories.map(cat => {
+                const count = cat === '全部' ? treeData.length : (counts[cat] || 0);
+                const activeClass = activeCategory === cat ? 'active' : '';
+                return `<span class="filter-tab ${activeClass}" data-category="${cat}">
+                            ${cat} <span class="badge">${count}</span>
+                        </span>`;
+            }).join('');
+
+            // 绑定点击事件
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    activeCategory = this.dataset.category;
+                    renderTabs(); // 刷新高亮
+                    renderCards(); // 刷新卡片
+                });
+            });
+        }
+
+        // 渲染卡片
+        function renderCards() {
+            const keyword = searchInput.value.trim().toLowerCase();
+
+            const filtered = treeData.filter(item => {
+                // 1) 分类筛选
+                if (activeCategory !== '全部' && item.category !== activeCategory) {
+                    return false;
+                }
+                // 2) 关键词搜索（名称、描述、分类）
+                if (keyword) {
+                    const searchable = [
+                        item.name,
+                        item.description,
+                        item.category,
+                        item.id
+                    ].join(' ').toLowerCase();
+                    if (!searchable.includes(keyword)) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+
+            // 更新统计
+            totalSpan.textContent = filtered.length + ' 个';
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                            <div class="no-result">
+                                <span>🔎</span>
+                                没有找到匹配的故障树<br>
+                                <small style="color:#b0c0ce;">试试其他关键词或分类</small>
+                            </div>
+                        `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(item => {
+                const categoryTag = item.category ? `<span class="category-tag">${item.category}</span>` : '';
+                const desc = item.description || '';
+
+                return `
+                            <div class="tree-card">
+                                <div class="tree-info">
+                                    <div class="tree-name">
+                                        ${item.name}
+                                        ${categoryTag}
+                                    </div>
+                                    ${desc ? `<div class="tree-desc">${desc}</div>` : ''}
+                                </div>
+                                <a href="${item.path}" class="tree-link" title="查看故障树">➜</a>
+                            </div>
+                        `;
+            }).join('');
+        }
+
+        // 搜索框输入事件
+        searchInput.addEventListener('input', function() {
+            renderCards();
         });
+
+        // 初始化渲染
+        renderTabs();
+        renderCards();
     </script>
+
 </body>
 </html>
