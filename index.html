@@ -305,7 +305,7 @@
         const filterTabs = document.getElementById('filterTabs');
         const totalSpan = document.getElementById('totalCount');
 
-        let activeCategory = '全部';
+        let activeCategory = 'ALL';
 
         // 提取所有分类
         function getCategories() {
@@ -365,7 +365,7 @@
             });
 
             // 更新统计
-            totalSpan.textContent = filtered.length + ' 个';
+            totalSpan.textContent = filtered.length + ' items';
 
             if (filtered.length === 0) {
                 grid.innerHTML = `
