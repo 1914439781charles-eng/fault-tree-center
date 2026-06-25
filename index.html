@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Milesight Device Fault Tree Collection Navigation</title>
+
     <style>
         * {
             box-sizing: border-box;
@@ -12,7 +13,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
             background: #f5f7fa;
             padding: 40px 20px;
             min-height: 100vh;
@@ -23,7 +24,6 @@
             margin: 0 auto;
         }
 
-        /* 头部区域 */
         .header {
             display: flex;
             flex-wrap: wrap;
@@ -49,7 +49,6 @@
             border-radius: 20px;
         }
 
-        /* 搜索框 */
         .search-box {
             width: 100%;
             max-width: 340px;
@@ -63,13 +62,7 @@
             border-radius: 30px;
             font-size: 15px;
             background: white;
-            transition: all 0.25s ease;
             outline: none;
-        }
-
-        .search-box input:focus {
-            border-color: #4a90d9;
-            box-shadow: 0 0 0 4px rgba(74, 144, 217, 0.15);
         }
 
         .search-box::before {
@@ -78,11 +71,9 @@
             left: 14px;
             top: 50%;
             transform: translateY(-50%);
-            font-size: 16px;
             opacity: 0.6;
         }
 
-        /* 分类筛选标签 */
         .filter-tabs {
             display: flex;
             flex-wrap: wrap;
@@ -100,34 +91,19 @@
             cursor: pointer;
             font-size: 14px;
             color: #3d4a5c;
-            transition: all 0.2s ease;
-            user-select: none;
-        }
-
-        .filter-tab:hover {
-            background: #f0f4f9;
         }
 
         .filter-tab.active {
             background: #1a2332;
             color: white;
-            border-color: #1a2332;
         }
 
-        .filter-tab .badge {
-            display: inline-block;
-            background: rgba(0, 0, 0, 0.08);
-            border-radius: 30px;
-            padding: 0 8px;
+        .badge {
+            margin-left: 6px;
             font-size: 12px;
-            margin-left: 4px;
+            opacity: 0.8;
         }
 
-        .filter-tab.active .badge {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        /* 故障树卡片网格 */
         .tree-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -138,274 +114,194 @@
             background: white;
             border-radius: 12px;
             padding: 16px 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
             border: 1px solid #eef1f5;
-            transition: all 0.2s ease;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .tree-card:hover {
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
-            transform: translateY(-2px);
-            border-color: #c8d2df;
-        }
-
-        .tree-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            flex: 1;
-            min-width: 0;
-        }
-
         .tree-name {
             font-size: 16px;
             font-weight: 600;
-            color: #1a2332;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
         }
 
-        .tree-name .category-tag {
+        .category-tag {
             font-size: 11px;
-            font-weight: 500;
             background: #eef3f9;
-            color: #2c5f8a;
             padding: 2px 10px;
             border-radius: 20px;
-            white-space: nowrap;
+            margin-left: 8px;
+            color: #2c5f8a;
         }
 
         .tree-desc {
             font-size: 13px;
             color: #6b7a8f;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
         .tree-link {
-            display: inline-flex;
+            width: 36px;
+            height: 36px;
+            display: flex;
             align-items: center;
             justify-content: center;
             background: #f0f4f9;
-            color: #1a2332;
-            width: 36px;
-            height: 36px;
             border-radius: 50%;
             text-decoration: none;
-            font-size: 18px;
-            transition: all 0.2s ease;
-            flex-shrink: 0;
-            margin-left: 10px;
         }
 
-        .tree-link:hover {
-            background: #1a2332;
-            color: white;
-            transform: scale(1.05);
-        }
-
-        /* 无结果提示 */
         .no-result {
             grid-column: 1 / -1;
             text-align: center;
-            padding: 50px 20px;
+            padding: 50px;
             color: #8a9aa8;
-            font-size: 16px;
-        }
-
-        .no-result span {
-            font-size: 40px;
-            display: block;
-            margin-bottom: 10px;
-        }
-
-        /* 响应式 */
-        @media (max-width: 640px) {
-            .header {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .search-box {
-                max-width: 100%;
-            }
-
-            .tree-grid {
-                grid-template-columns: 1fr;
-            }
-
-            h1 {
-                font-size: 22px;
-            }
         }
     </style>
 </head>
+
 <body>
 
-    <div class="container">
-        <!-- 头部 -->
-        <div class="header">
-            <h1>
-                📊 Milesight Device Fault Tree Collection Navigation
-                <span class="stats" id="totalCount">0 items</span>
-            </h1>
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search by name, description, or category..." autocomplete="off">
-            </div>
-        </div>
+<div class="container">
 
-        <!-- 分类标签 -->
-        <div class="filter-tabs" id="filterTabs">
-            <!-- 由 JS 动态生成 -->
-        </div>
+    <div class="header">
+        <h1>
+            📊 Milesight Fault Tree Center
+            <span class="stats" id="totalCount">0 items</span>
+        </h1>
 
-        <!-- 卡片网格 -->
-        <div class="tree-grid" id="treeGrid">
-            <!-- 由 JS 动态渲染 -->
+        <div class="search-box">
+            <input id="searchInput" placeholder="Search name, category or description...">
         </div>
     </div>
 
-    <script>
-        // ============================================================
-        //  ★★★ 在这里维护你的故障树数据 ★★★
-        //  新增故障树时，只需在这个数组里添加一个对象即可。
-        //  支持按 "分类" 筛选，也支持搜索 "名称"、"描述"、"分类"。
-        // ============================================================
-        const treeData = [{
-            id: 'tree-001',
-            name: 'How to ensure the stability of D2D communication',
-            category: 'D2D',
-            description: '',
-            path: 'trees/How to ensure the stability of D2D communication/'
-        }, {
-            id: 'tree-002',
-            name: 'EM300-TH Data Anomaly (127% or -0.1℃)',
-            category: 'Hardware Failure',
-            description: '',
-            path: 'trees/EM300-TH Data Anomaly (127% or -0.1℃)/'
-        }, {
-            id: 'tree-003',
-            name: 'The sensor cannot be added to the built-in NS of the Milesight gateway',
-            category: 'Function Troubleshooting',
-            description: '',
-            path: 'trees/The sensor cannot be added to the built-in NS of the Milesight gateway/'
-        },];
-        // ============================================================
+    <div class="filter-tabs" id="filterTabs"></div>
 
-        // ----- 以下为渲染逻辑，无需修改 -----
+    <div class="tree-grid" id="treeGrid"></div>
 
-        const grid = document.getElementById('treeGrid');
-        const searchInput = document.getElementById('searchInput');
-        const filterTabs = document.getElementById('filterTabs');
-        const totalSpan = document.getElementById('totalCount');
+</div>
 
-        let activeCategory = 'ALL';
+<script>
 
-        // 提取所有分类
-        function getCategories() {
-            const cats = new Set(treeData.map(t => t.category).filter(Boolean));
-            return ['全部', ...Array.from(cats).sort()];
-        }
+const treeData = [
+    {
+        id: 'tree-001',
+        name: 'D2D Communication Stability Guide',
+        category: 'D2D',
+        description: '',
+        path: 'trees/d2d-stability/'
+    },
+    {
+        id: 'tree-002',
+        name: 'EM300-TH Data Anomaly (127% / -0.1°C)',
+        category: 'Hardware Failure',
+        description: '',
+        path: 'trees/em300-th-anomaly/'
+    },
+    {
+        id: 'tree-003',
+        name: 'Sensor Cannot Join Built-in NS',
+        category: 'Function Troubleshooting',
+        description: '',
+        path: 'trees/sensor-join-ns/'
+    }
+];
 
-        // 渲染分类标签
-        function renderTabs() {
-            const categories = getCategories();
-            const counts = {};
-            treeData.forEach(t => {
-                const cat = t.category || '未分类';
-                counts[cat] = (counts[cat] || 0) + 1;
-            });
+// -------------------- LOGIC --------------------
 
-            filterTabs.innerHTML = categories.map(cat => {
-                const count = cat === '全部' ? treeData.length : (counts[cat] || 0);
-                const activeClass = activeCategory === cat ? 'active' : '';
-                return `<span class="filter-tab ${activeClass}" data-category="${cat}">
-                            ${cat} <span class="badge">${count}</span>
-                        </span>`;
-            }).join('');
+const grid = document.getElementById('treeGrid');
+const searchInput = document.getElementById('searchInput');
+const filterTabs = document.getElementById('filterTabs');
+const totalSpan = document.getElementById('totalCount');
 
-            // 绑定点击事件
-            document.querySelectorAll('.filter-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    activeCategory = this.dataset.category;
-                    renderTabs(); // 刷新高亮
-                    renderCards(); // 刷新卡片
-                });
-            });
-        }
+let activeCategory = 'ALL';
 
-        // 渲染卡片
-        function renderCards() {
-            const keyword = searchInput.value.trim().toLowerCase();
+// categories
+function getCategories() {
+    const cats = new Set(treeData.map(t => t.category));
+    return ['ALL', ...Array.from(cats)];
+}
 
-            const filtered = treeData.filter(item => {
-                // 1) 分类筛选
-                if (activeCategory !== '全部' && item.category !== activeCategory) {
-                    return false;
-                }
-                // 2) 关键词搜索（名称、描述、分类）
-                if (keyword) {
-                    const searchable = [
-                        item.name,
-                        item.description,
-                        item.category,
-                        item.id
-                    ].join(' ').toLowerCase();
-                    if (!searchable.includes(keyword)) {
-                        return false;
-                    }
-                }
-                return true;
-            });
+// tabs
+function renderTabs() {
+    const cats = getCategories();
 
-            // 更新统计
-            totalSpan.textContent = filtered.length + ' items';
+    const counts = {};
+    treeData.forEach(t => {
+        counts[t.category] = (counts[t.category] || 0) + 1;
+    });
 
-            if (filtered.length === 0) {
-                grid.innerHTML = `
-                            <div class="no-result">
-                                <span>🔎</span>
-                                没有找到匹配的故障树<br>
-                                <small style="color:#b0c0ce;">试试其他关键词或分类</small>
-                            </div>
-                        `;
-                return;
-            }
+    filterTabs.innerHTML = cats.map(cat => {
+        const count = cat === 'ALL' ? treeData.length : counts[cat];
+        return `
+            <span class="filter-tab ${activeCategory === cat ? 'active' : ''}"
+                  data-category="${cat}">
+                ${cat} <span class="badge">${count}</span>
+            </span>
+        `;
+    }).join('');
 
-            grid.innerHTML = filtered.map(item => {
-                const categoryTag = item.category ? `<span class="category-tag">${item.category}</span>` : '';
-                const desc = item.description || '';
-
-                return `
-                            <div class="tree-card">
-                                <div class="tree-info">
-                                    <div class="tree-name">
-                                        ${item.name}
-                                        ${categoryTag}
-                                    </div>
-                                    ${desc ? `<div class="tree-desc">${desc}</div>` : ''}
-                                </div>
-                                <a href="${item.path}" class="tree-link" title="查看故障树">➜</a>
-                            </div>
-                        `;
-            }).join('');
-        }
-
-        // 搜索框输入事件
-        searchInput.addEventListener('input', function() {
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.onclick = () => {
+            activeCategory = tab.dataset.category;
+            renderTabs();
             renderCards();
-        });
+        };
+    });
+}
 
-        // 初始化渲染
-        renderTabs();
-        renderCards();
-    </script>
+// cards
+function renderCards() {
+
+    const keyword = searchInput.value.toLowerCase();
+
+    const filtered = treeData.filter(item => {
+
+        if (activeCategory !== 'ALL' && item.category !== activeCategory) {
+            return false;
+        }
+
+        if (keyword) {
+            const text = (item.name + item.category + item.description).toLowerCase();
+            if (!text.includes(keyword)) return false;
+        }
+
+        return true;
+    });
+
+    totalSpan.textContent = filtered.length + ' items';
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `
+            <div class="no-result">
+                🔎 No matching fault trees found<br>
+                <small>Try different keywords or categories</small>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = filtered.map(item => `
+        <div class="tree-card">
+            <div>
+                <div class="tree-name">
+                    ${item.name}
+                    <span class="category-tag">${item.category}</span>
+                </div>
+                <div class="tree-desc">${item.description || ''}</div>
+            </div>
+            <a class="tree-link" href="${item.path}">➜</a>
+        </div>
+    `).join('');
+}
+
+// search
+searchInput.addEventListener('input', renderCards);
+
+// init
+renderTabs();
+renderCards();
+
+</script>
 
 </body>
 </html>
