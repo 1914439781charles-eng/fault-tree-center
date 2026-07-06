@@ -104,7 +104,7 @@
   .node-card.active { border-color: var(--accent); box-shadow: var(--shadow-lg); cursor: default; }
   .node-card.resolved { border-color: var(--success); background: var(--success-light); }
 
-  .node-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; user-select: none; }
+  .node-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
   .node-step-num { width: 34px; height: 34px; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--text-secondary); flex-shrink: 0; transition: all var(--transition); }
   .node-card.active .node-step-num { background: var(--accent); color: #fff; }
   .node-card.resolved .node-step-num { background: var(--success); color: #fff; }
@@ -115,7 +115,7 @@
   .node-card.active .node-chevron { transform: rotate(180deg); }
 
   .node-body { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(.4,0,.2,1); }
-  .node-card.active .node-body { max-height: 2000px; }
+  .node-card.active .node-body { max-height: 50000px; }
   .node-body-inner { padding: 0 20px 20px; border-top: 1px solid var(--border); }
 
   .problem-desc { margin-top: 16px; padding: 12px 16px; background: var(--bg); border-radius: var(--radius-sm); font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
@@ -161,8 +161,6 @@
     max-height: 88vh;
     object-fit: contain;
     border-radius: var(--radius);
-    user-select: none;
-    -webkit-user-drag: none;
   }
 
   .lightbox-close {
@@ -516,27 +514,98 @@ function buildNodeWrapper(node, depth) {
   const noMoreBanner = document.createElement('div');
   noMoreBanner.className = 'result-banner escalated';
   noMoreBanner.id = `nomore-${node.id}`;
-  noMoreBanner.innerHTML = `<div class="result-icon">!</div><div class="result-title">${T.banners.escalated.title}</div><div class="result-subtitle">${T.banners.escalated.subtitle}</div><a href="https://www.milesight.com/support/technical-support" target="_blank" class="btn btn-next" style="text-decoration:none;display:inline-flex;margin-right:8px;">${T.banners.escalated.linkText}</a><button class="btn btn-reset" onclick="copyDiagnosticPath(this)">${T.buttons.copyPath}</button><button class="btn btn-reset" onclick="resetTree()" style="margin-top:8px;">${T.buttons.reset}</button>`;
+  noMoreBanner.innerHTML = `<div class="result-icon">!</div><div class="result-title">${T.banners.escalated.title}</div><div class="result-subtitle">${T.banners.escalated.subtitle}</div><a href="https://support.milesight-iot.com/support/tickets/new" target="_blank" class="btn btn-next" style="text-decoration:none;display:inline-flex;margin-right:8px;">${T.banners.escalated.linkText}</a><button class="btn btn-reset" onclick="copyDiagnosticPath(this)">${T.buttons.copyPath}</button><button class="btn btn-reset" onclick="resetTree()" style="margin-top:8px;">${T.buttons.reset}</button>`;
   wrapper.appendChild(noMoreBanner);
 
   return wrapper;
 }
 
 // ============================================================
+// DYNAMIC HEIGHT — ensures all content is fully visible
+// ============================================================
+function expandNodeBody(card) {
+  const body = card.querySelector('.node-body');
+  if (!body) return;
+  // scrollHeight returns full content height even while hidden (max-height:0 + overflow:hidden)
+  const height = body.scrollHeight;
+  // Override CSS fallback (50000px) with the exact measured height for smooth animation
+  // Start from 0: first override CSS active rule back to 0, force reflow, then animate to target
+  body.style.maxHeight = '0px';
+  body.offsetHeight; // force reflow — browser registers start state as 0
+  body.style.maxHeight = height + 'px'; // transition to measured height
+  // After animation completes, remove the constraint entirely so content can grow freely
+  // (e.g. when images that were not yet rendered finally load)
+  const onEnd = () => {
+    body.style.maxHeight = 'none';
+    body.removeEventListener('transitionend', onEnd);
+  };
+  body.addEventListener('transitionend', onEnd);
+  setTimeout(() => { // fallback in case transitionend doesn't fire
+    body.style.maxHeight = 'none';
+    body.removeEventListener('transitionend', onEnd);
+  }, 500);
+}
+
+function collapseNodeBody(card) {
+  const body = card.querySelector('.node-body');
+  if (!body) return;
+  // Set max-height to current scrollHeight so transition has a concrete start point
+  // (inline 'none' can't transition, so we pin it first)
+  body.style.transition = 'none';
+  body.style.maxHeight = body.scrollHeight + 'px';
+  body.offsetHeight; // force reflow
+  body.style.transition = ''; // restore CSS transition
+  body.style.maxHeight = '0px'; // animate collapse
+  // Clean up inline style after animation
+  const onEnd = () => {
+    body.style.maxHeight = '';
+    body.removeEventListener('transitionend', onEnd);
+  };
+  body.addEventListener('transitionend', onEnd);
+  setTimeout(() => {
+    body.style.maxHeight = '';
+    body.removeEventListener('transitionend', onEnd);
+  }, 500);
+}
+
+// When images inside an expanded node finish loading, recalculate max-height
+treeRootEl.addEventListener('load', (e) => {
+  if (e.target.tagName !== 'IMG') return;
+  const card = e.target.closest('.node-card');
+  if (!card || !card.classList.contains('active')) return;
+  const body = card.querySelector('.node-body');
+  if (!body) return;
+  // If max-height is 'none' (constraint removed), no update needed — content grows freely
+  // If max-height is still a fixed value (animation in progress), update to new scrollHeight
+  if (body.style.maxHeight && body.style.maxHeight !== 'none' && body.style.maxHeight !== '') {
+    body.style.maxHeight = body.scrollHeight + 'px';
+  }
+}, true); // capture phase to catch img load events before they bubble
+
+// ============================================================
 // ACTIONS
 // ============================================================
 function toggleNode(node, card) {
   if (resolvedNodeId) return;
-  card.classList.toggle('active');
-  expandedNodes[node.id] = card.classList.contains('active');
-  if (card.classList.contains('active') && getDepth(node) > 0) { setTimeout(() => panToElement(card, true), 100); }
+  if (card.classList.contains('active')) {
+    collapseNodeBody(card);
+    card.classList.remove('active');
+    expandedNodes[node.id] = false;
+  } else {
+    card.classList.add('active');
+    expandedNodes[node.id] = true;
+    expandNodeBody(card);
+    if (getDepth(node) > 0) { setTimeout(() => panToElement(card, true), 350); }
+  }
 }
 
 function markResolved(node, card, wrapper) {
   resolvedNodeId = node.id;
+  const wasActive = card.classList.contains('active');
   card.classList.add('active', 'resolved');
   expandedNodes[node.id] = true;
   if (!activePath.includes(node.id)) activePath.push(node.id);
+  if (!wasActive) expandNodeBody(card);
   const stem = wrapper.querySelector(`#stem-${node.id}`);
   if (stem) stem.classList.remove('show');
   const crow = wrapper.querySelector(`#children-${node.id}`);
@@ -548,9 +617,11 @@ function markResolved(node, card, wrapper) {
 }
 
 function proceedToChildren(node, card, wrapper) {
+  const wasActive = card.classList.contains('active');
   card.classList.add('active');
   expandedNodes[node.id] = true;
   if (!activePath.includes(node.id)) activePath.push(node.id);
+  if (!wasActive) expandNodeBody(card);
   const stem = wrapper.querySelector(`#stem-${node.id}`);
   if (stem) { stem.classList.add('show'); stem.classList.add('active'); }
   const crow = wrapper.querySelector(`#children-${node.id}`);
@@ -635,7 +706,7 @@ function navigateToNode(nodeId) {
     const w = document.querySelector(`.node-wrapper[data-node-id="${n.id}"]`);
     if (!w) continue;
     const c = w.querySelector('.node-card');
-    if (c && !c.classList.contains('active')) { c.classList.add('active'); expandedNodes[n.id] = true; }
+    if (c && !c.classList.contains('active')) { c.classList.add('active'); expandedNodes[n.id] = true; expandNodeBody(c); }
     const st = w.querySelector(`#stem-${n.id}`);
     if (st) { st.classList.add('show', 'active'); }
     const cr = w.querySelector(`#children-${n.id}`);
@@ -644,11 +715,11 @@ function navigateToNode(nodeId) {
   }
   const targetNode = chain[chain.length - 1];
   const targetCard = document.getElementById(`card-${targetNode.id}`);
-  if (targetCard && !targetCard.classList.contains('active')) { targetCard.classList.add('active'); expandedNodes[targetNode.id] = true; }
+  if (targetCard && !targetCard.classList.contains('active')) { targetCard.classList.add('active'); expandedNodes[targetNode.id] = true; expandNodeBody(targetCard); }
   if (!activePath.includes(targetNode.id)) activePath.push(targetNode.id);
   updateMinimap();
   updateBadge(T.badge.step + ' ' + (getDepth(targetNode) + 1));
-  setTimeout(() => { if (targetCard) panToElement(targetCard, true); }, 200);
+  setTimeout(() => { if (targetCard) panToElement(targetCard, true); }, 350);
 }
 
 // ============================================================
@@ -792,7 +863,6 @@ function openLightbox(imgSrc) {
   const img = document.createElement('img');
   img.src = imgSrc;
   img.alt = '';
-  img.draggable = false;
   img.addEventListener('load', () => {
     // Set min scale based on image dimensions so it never gets too tiny
     const naturalW = img.naturalWidth;
