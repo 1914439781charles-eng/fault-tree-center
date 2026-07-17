@@ -4,7 +4,7 @@
 // ============================================================
 const treeContent = 
 {
-  "en": {
+  "en": { 
     "id": "root",
     "title": "Troubleshooting Packet Loss of LoRaWAN Sensor Data",
     "subtitle": "",
