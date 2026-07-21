@@ -29,7 +29,7 @@ const treeContent =
       },
       {
         "id": "root_new_3",
-        "title": "Not any size of alternating current can make the CT device start up. You need to check the minimum starting current of this device in the Milesight documentation center(https://www.milesight.com/support/resources/document-center).",
+        "title": "Not any size of alternating current can make the CT device start up. You need to check the minimum starting current of this device in the datasheet of Milesight documentation center(https://www.milesight.com/support/resources/document-center).",
         "subtitle": "",
         "problem": "",
         "solution": [],
